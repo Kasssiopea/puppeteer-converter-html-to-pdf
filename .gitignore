@@ -2,3 +2,8 @@
 .env.prod
 node_modules
 .idea
+
+# npx --yes @puppeteer/browsers install chrome
+chrome
+
+*.log
