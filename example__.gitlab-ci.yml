@@ -1,0 +1,42 @@
+stages:
+  - build
+  - test
+  - deploy
+
+variables:
+  DOCKER_DRIVER: overlay2
+
+services:
+  - docker:dind
+
+before_script:
+  - docker info
+  - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
+
+build:
+  stage: build
+  script:
+    - docker build -t $CI_REGISTRY_IMAGE:latest .
+    - docker push $CI_REGISTRY_IMAGE:latest
+  only:
+    - main
+
+test:
+  stage: test
+  script:
+    - docker run --rm --env-file .env $CI_REGISTRY_IMAGE:latest npm test
+  only:
+    - main
+
+deploy:
+  stage: deploy
+  script:
+    - docker pull $CI_REGISTRY_IMAGE:latest
+    - docker stop htmltopdf || true
+    - docker rm htmltopdf || true
+    - docker run -d --name htmltopdf --env-file .env -p 3000:3000 $CI_REGISTRY_IMAGE:latest
+  only:
+    - main
+  environment:
+    name: production
+    url: http://localhost:3000
