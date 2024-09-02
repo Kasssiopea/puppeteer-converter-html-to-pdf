@@ -1,0 +1,47 @@
+version: '3.8'
+services:
+  npu-converter-html-to-pdf-backend:
+    image: ${NPU_REGISTRY_IMAGE}
+    networks:
+      - network-ipnp-core
+    sysctls:
+      - net.ipv4.tcp_keepalive_time=600
+    ports:
+      - target: ${NODE_PORT}
+        protocol: tcp
+        mode: host
+    env_file:
+      - .env.prod
+    volumes:
+      - '/etc/timezone:/etc/timezone:ro'
+      - '/etc/localtime:/etc/localtime:ro'
+    labels:
+      - SERVICE_REGION=ca-1
+      - SERVICE_NAME=${CI_PROJECT_NAME}
+      - SERVICE_TAGS=${DOCKER_STACK},metrics,traefik.enable=true,
+        ,traefik.http.routers.route-${CI_PROJECT_NAME}.rule=Host(`${API_HOST}`) && PathPrefix(`${PATH_PREFIX}`),
+        ,traefik.http.routers.route-${CI_PROJECT_NAME}.priority=10
+
+      # - SERVICE_REGION=ca-1
+      # - SERVICE_NAME=${CI_PROJECT_NAME}
+      # - SERVICE_TAGS=${DOCKER_STACK},traefik.enable=true,
+      #   ,traefik.http.routers.route-${DOCKER_STACK}_${CI_PROJECT_NAME}-1.rule=Host(`${API_HOST}`) && PathPrefix(`${PATH_PREFIX}`),
+      #   ,traefik.http.routers.route-${DOCKER_STACK}_${CI_PROJECT_NAME}-1.middlewares=middl-${DOCKER_STACK}_${CI_PROJECT_NAME}-1@consulcatalog
+        # ,traefik.http.middlewares.middl-${DOCKER_STACK}_${CI_PROJECT_NAME}-1.forwardauth.address=${FORWARD_AUTH_SERVER},
+        # ,traefik.http.middlewares.middl-${DOCKER_STACK}_${CI_PROJECT_NAME}-1.forwardauth.authResponseHeaders=X-Auth-Info
+
+      - SERVICE_CHECK_TCP=true
+      - SERVICE_CHECK_INTERVAL=15s
+      - SERVICE_CHECK_TIMEOUT=3s
+      - SERVICE_CHECK_DEREGISTER_AFTER=5m
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints: [node.role == worker]
+
+
+networks:
+  network-ipnp-core:
+    driver: overlay
+    attachable: true
