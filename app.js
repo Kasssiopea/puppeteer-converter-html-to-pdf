@@ -1,6 +1,7 @@
 const express = require('express');
 const puppeteer = require('puppeteer');
 const winston = require('winston');
+const helmet = require('helmet');
 const swaggerJsDoc = require('swagger-jsdoc');
 const swaggerUi = require('swagger-ui-express');
 const dotenv = require('dotenv');
@@ -13,11 +14,13 @@ dotenv.config({ path: envFile });
 
 const PORT = process.env.NODE_PORT || 3000;
 const HOST = process.env.NODE_HOST || 'http://localhost';
+// const DEBUG = process.env.DEBUG || null;
 const BROWSER_OPTIONS = process.env.BROWSER_OPTIONS.split(',') || ['--no-sandbox', '--disable-setuid-sandbox'];
 
 // Middleware для работы с файлами
-app.use(express.urlencoded({ extended: true }));
-app.use(express.json());
+app.use(helmet());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // Настройка winston для логирования
 const logger = winston.createLogger({
@@ -27,8 +30,9 @@ const logger = winston.createLogger({
       winston.format.json()
   ),
   transports: [
-    new winston.transports.File({ filename: 'error.log', level: 'error' }),
-    new winston.transports.File({ filename: 'combined.log' })
+    new winston.transports.Console()
+    // new winston.transports.File({ filename: 'error.log', level: 'error' }),
+    // new winston.transports.File({ filename: 'combined.log' })
   ]
 });
 
@@ -56,7 +60,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 // Маршрут для обработки запроса на конвертацию HTML в PDF
 /**
  * @swagger
- * /convertHtmlToPdf:
+ * /v1/convert-html-to-pdf:
  *   post:
  *     summary: Конвертирует HTML в PDF
  *     requestBody:
@@ -121,7 +125,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
  *                   description: Додаткове повідомлення про помилку (необов'язково)
  *                   example: "Виникла помилка при обробці HTML контенту"
  */
-app.post('/convertHtmlToPdf', async (req, res) => {
+app.post('/v1/convert-html-to-pdf', async (req, res) => {
   const { html } = req.body; // Принимаем HTML контент из запроса
   const { options } = req.body;
 
@@ -175,8 +179,20 @@ app.post('/convertHtmlToPdf', async (req, res) => {
   }
 });
 
-// Запускаем Express сервер
+// if (DEBUG) {
+//   app.post('*', async (req, res) => {
+//     const ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+//     logger.info(`Получен запрос на конвертацию HTML в PDF от IP: ${ip}: ${req}`);
+//   });
 
+//   app.get('*', async (req, res) => {
+//     const ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+//     logger.info(`Получен запрос на конвертацию HTML в PDF от IP: ${ip}: ${req}`);
+//   });
+// }
+
+
+// Запускаем Express сервер
 app.listen(PORT, () => {
   logger.info(`Сервер запущен на порту ${PORT}`);
   console.log(`Сервер запущен на порту ${PORT}. Swagger документация доступна по адресу ${HOST}:${PORT}/api-docs`);
