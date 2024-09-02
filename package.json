@@ -1,6 +1,6 @@
 {
-  "name": "htmltopdf",
-  "version": "0.0.0",
+  "name": "npu-converter-html-to-pdf-backend",
+  "version": "0.0.1",
   "private": true,
   "scripts": {
     "start": "node app.js",
@@ -13,6 +13,7 @@
     "debug": "~2.6.9",
     "dotenv": "^16.4.5",
     "express": "~4.16.1",
+    "helmet": "^7.1.0",
     "http-errors": "~1.6.3",
     "morgan": "~1.9.1",
     "pug": "2.0.0-beta11",
